@@ -32,8 +32,12 @@
   },
   "babel": {
     "presets": [
-      "@babel/env",
-      "@babel/stage-3"
+      ["@babel/env", {
+        "targets": {
+            "browsers": ["last 2 versions"]
+        },
+        "modules": false
+      }]
     ],
     "plugins": [
       [
@@ -41,6 +45,9 @@
         {
           "strip": true
         }
+      ],
+      [
+        "@babel/plugin-proposal-class-properties"
       ]
     ]
   },
