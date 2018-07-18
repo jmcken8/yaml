@@ -152,7 +152,7 @@ export default class Schema {
         }
       }
       match = this.schema.find(
-        t => t.class && obj instanceof t.class && !t.format
+        t => t.class && (obj instanceof t.class || obj.constructor.name === t.class.name) && !t.format
       )
       if (!match) {
         const name = obj && obj.constructor ? obj.constructor.name : typeof obj
