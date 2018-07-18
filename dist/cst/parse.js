@@ -3,21 +3,19 @@ import Document from './Document';
 import ParseContext from './ParseContext';
 export default function parse(src) {
   if (src.indexOf('\r') !== -1) src = src.replace(/\r\n?/g, '\n');
-  var context = new ParseContext({
-    src: src
+  const context = new ParseContext({
+    src
   });
-  var documents = [];
-  var offset = 0;
+  const documents = [];
+  let offset = 0;
 
   while (offset < src.length) {
-    var doc = new Document();
+    const doc = new Document();
     offset = doc.parse(context, offset);
     documents.push(doc);
   }
 
-  documents.toString = function () {
-    return documents.join('...\n');
-  };
+  documents.toString = () => documents.join('...\n');
 
   return documents;
 }

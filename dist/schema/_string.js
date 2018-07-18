@@ -1,7 +1,7 @@
 import { addCommentBefore } from '../addComment';
 import { Type } from '../cst/Node';
 import foldFlowLines, { FOLD_BLOCK, FOLD_FLOW, FOLD_QUOTED } from '../foldFlowLines';
-export var strOptions = {
+export const strOptions = {
   defaultType: Type.PLAIN,
   dropCR: false,
   doubleQuoted: {
@@ -13,12 +13,12 @@ export var strOptions = {
     minContentWidth: 20
   }
 };
-export var resolve = function resolve(doc, node) {
+export const resolve = (doc, node) => {
   // on error, will return { str: string, errors: Error[] }
-  var res = node.strValue;
+  const res = node.strValue;
   if (!res) return '';
   if (typeof res === 'string') return res;
-  res.errors.forEach(function (error) {
+  res.errors.forEach(error => {
     if (!error.source) error.source = node;
     doc.errors.push(error);
   });
@@ -26,15 +26,16 @@ export var resolve = function resolve(doc, node) {
 };
 
 function doubleQuotedString(value, indent, oneLine) {
-  var _strOptions$doubleQuo = strOptions.doubleQuoted,
-      jsonEncoding = _strOptions$doubleQuo.jsonEncoding,
-      minMultiLineLength = _strOptions$doubleQuo.minMultiLineLength;
-  var json = JSON.stringify(value);
+  const {
+    jsonEncoding,
+    minMultiLineLength
+  } = strOptions.doubleQuoted;
+  const json = JSON.stringify(value);
   if (jsonEncoding) return json;
-  var str = '';
-  var start = 0;
+  let str = '';
+  let start = 0;
 
-  for (var i = 0, ch = json[i]; ch; ch = json[++i]) {
+  for (let i = 0, ch = json[i]; ch; ch = json[++i]) {
     if (ch === ' ' && json[i + 1] === '\\' && json[i + 2] === 'n') {
       // space before newline needs to be escaped to not be folded
       str += json.slice(start, i) + '\\ ';
@@ -46,7 +47,7 @@ function doubleQuotedString(value, indent, oneLine) {
     if (ch === '\\') switch (json[i + 1]) {
       case 'u':
         str += json.slice(start, i);
-        var code = json.substr(i + 2, 4);
+        const code = json.substr(i + 2, 4);
 
         switch (code) {
           case '0000':
@@ -127,7 +128,7 @@ function singleQuotedString(value, indent, oneLine) {
     if (/[ \t]\n|\n[ \t]/.test(value)) return doubleQuotedString(value, indent, false);
   }
 
-  value = "'" + value.replace(/'/g, "''").replace(/\n+/g, "$&\n".concat(indent)) + "'";
+  value = "'" + value.replace(/'/g, "''").replace(/\n+/g, `$&\n${indent}`) + "'";
   return oneLine ? value : foldFlowLines(value, indent, FOLD_FLOW, strOptions.fold);
 }
 
@@ -139,14 +140,14 @@ function blockString(value, indent, literal, forceBlockIndent, comment, onCommen
   }
 
   if (forceBlockIndent && !indent) indent = ' ';
-  var indentSize = indent ? '2' : '1'; // root is at -1
+  const indentSize = indent ? '2' : '1'; // root is at -1
 
-  var header = literal ? '|' : '>';
+  let header = literal ? '|' : '>';
   if (!value) return header + '\n';
-  var wsStart = '';
-  var wsEnd = '';
-  value = value.replace(/[\n\t ]*$/, function (ws) {
-    var n = ws.indexOf('\n');
+  let wsStart = '';
+  let wsEnd = '';
+  value = value.replace(/[\n\t ]*$/, ws => {
+    const n = ws.indexOf('\n');
 
     if (n === -1) {
       header += '-'; // strip
@@ -156,9 +157,9 @@ function blockString(value, indent, literal, forceBlockIndent, comment, onCommen
 
     wsEnd = ws.replace(/\n$/, '');
     return '';
-  }).replace(/^[\n ]*/, function (ws) {
+  }).replace(/^[\n ]*/, ws => {
     if (ws.indexOf(' ') !== -1) header += indentSize;
-    var m = ws.match(/ +$/);
+    const m = ws.match(/ +$/);
 
     if (m) {
       wsStart = ws.slice(0, -m[0].length);
@@ -168,26 +169,26 @@ function blockString(value, indent, literal, forceBlockIndent, comment, onCommen
       return '';
     }
   });
-  if (wsEnd) wsEnd = wsEnd.replace(/\n+(?!\n|$)/g, "$&".concat(indent));
-  if (wsStart) wsStart = wsStart.replace(/\n+/g, "$&".concat(indent));
+  if (wsEnd) wsEnd = wsEnd.replace(/\n+(?!\n|$)/g, `$&${indent}`);
+  if (wsStart) wsStart = wsStart.replace(/\n+/g, `$&${indent}`);
 
   if (comment) {
     header += ' #' + comment.replace(/ ?[\r\n]+/g, ' ');
     if (onComment) onComment();
   }
 
-  if (!value) return "".concat(header).concat(indentSize, "\n").concat(indent).concat(wsEnd);
+  if (!value) return `${header}${indentSize}\n${indent}${wsEnd}`;
 
   if (literal) {
-    value = value.replace(/\n+/g, "$&".concat(indent));
-    return "".concat(header, "\n").concat(indent).concat(wsStart).concat(value).concat(wsEnd);
+    value = value.replace(/\n+/g, `$&${indent}`);
+    return `${header}\n${indent}${wsStart}${value}${wsEnd}`;
   }
 
   value = value.replace(/\n+/g, '\n$&').replace(/(?:^|\n)([\t ].*)(?:([\n\t ]*)\n(?![\n\t ]))?/g, '$1$2') // more-indented lines aren't folded
   //         ^ ind.line  ^ empty     ^ capture next empty lines only at end of indent
-  .replace(/\n+/g, "$&".concat(indent));
-  var body = foldFlowLines("".concat(wsStart).concat(value).concat(wsEnd), indent, FOLD_BLOCK, strOptions.fold);
-  return "".concat(header, "\n").concat(indent).concat(body);
+  .replace(/\n+/g, `$&${indent}`);
+  const body = foldFlowLines(`${wsStart}${value}${wsEnd}`, indent, FOLD_BLOCK, strOptions.fold);
+  return `${header}\n${indent}${body}`;
 }
 
 function plainString(value, indent, implicitKey, inFlow, forceBlockIndent, tags, comment, onComment) {
@@ -206,13 +207,13 @@ function plainString(value, indent, implicitKey, inFlow, forceBlockIndent, tags,
   } // Need to verify that output will be parsed as a string
 
 
-  var str = value.replace(/\n+/g, "$&\n".concat(indent));
+  const str = value.replace(/\n+/g, `$&\n${indent}`);
 
   if (typeof tags.resolveScalar(str).value !== 'string') {
     return doubleQuotedString(value, indent, implicitKey);
   }
 
-  var body = implicitKey ? str : foldFlowLines(str, indent, FOLD_FLOW, strOptions.fold);
+  const body = implicitKey ? str : foldFlowLines(str, indent, FOLD_FLOW, strOptions.fold);
 
   if (comment && !inFlow && (body.indexOf('\n') !== -1 || comment.indexOf('\n') !== -1)) {
     if (onComment) onComment();
@@ -222,30 +223,30 @@ function plainString(value, indent, implicitKey, inFlow, forceBlockIndent, tags,
   return body;
 }
 
-export var str = {
+export const str = {
   class: String,
   tag: 'tag:yaml.org,2002:str',
-  resolve: resolve,
+  resolve,
   options: strOptions,
-  stringify: function stringify(_ref) {
-    var comment = _ref.comment,
-        value = _ref.value;
-
-    var _ref2 = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {},
-        forceBlockIndent = _ref2.forceBlockIndent,
-        implicitKey = _ref2.implicitKey,
-        indent = _ref2.indent,
-        inFlow = _ref2.inFlow,
-        tags = _ref2.tags,
-        type = _ref2.type;
-
-    var onComment = arguments.length > 2 ? arguments[2] : undefined;
-    var dropCR = strOptions.dropCR,
-        defaultType = strOptions.defaultType;
+  stringify: ({
+    comment,
+    value
+  }, {
+    forceBlockIndent,
+    implicitKey,
+    indent,
+    inFlow,
+    tags,
+    type
+  } = {}, onComment) => {
+    const {
+      dropCR,
+      defaultType
+    } = strOptions;
     if (typeof value !== 'string') value = String(value);
     if (dropCR && /\r/.test(value)) value = value.replace(/\r\n?/g, '\n');
 
-    var _stringify = function _stringify(_type) {
+    const _stringify = _type => {
       switch (_type) {
         case Type.BLOCK_FOLDED:
           return blockString(value, indent, false, forceBlockIndent, comment, onComment);
@@ -275,11 +276,11 @@ export var str = {
       type = Type.QUOTE_DOUBLE;
     }
 
-    var res = _stringify(type);
+    let res = _stringify(type);
 
     if (res === null) {
       res = _stringify(defaultType);
-      if (res === null) throw new Error("Unsupported default string type ".concat(defaultType));
+      if (res === null) throw new Error(`Unsupported default string type ${defaultType}`);
     }
 
     return res;

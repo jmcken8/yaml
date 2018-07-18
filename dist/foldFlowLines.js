@@ -1,6 +1,6 @@
-export var FOLD_FLOW = 'flow';
-export var FOLD_BLOCK = 'block';
-export var FOLD_QUOTED = 'quoted';
+export const FOLD_FLOW = 'flow';
+export const FOLD_BLOCK = 'block';
+export const FOLD_QUOTED = 'quoted';
 /**
  * Tries to keep input at up to `lineWidth` characters, splitting only on spaces
  * not followed by newlines or spaces unless `mode` is `'quoted'`. Lines are
@@ -22,25 +22,24 @@ export var FOLD_QUOTED = 'quoted';
  *   lineWidth characters
  */
 
-export default function foldFlowLines(text, indent, mode, _ref) {
-  var indentAtStart = _ref.indentAtStart,
-      _ref$lineWidth = _ref.lineWidth,
-      lineWidth = _ref$lineWidth === void 0 ? 80 : _ref$lineWidth,
-      _ref$minContentWidth = _ref.minContentWidth,
-      minContentWidth = _ref$minContentWidth === void 0 ? 20 : _ref$minContentWidth,
-      onFold = _ref.onFold,
-      onOverflow = _ref.onOverflow;
+export default function foldFlowLines(text, indent, mode, {
+  indentAtStart,
+  lineWidth = 80,
+  minContentWidth = 20,
+  onFold,
+  onOverflow
+}) {
   if (!lineWidth || lineWidth < 0) return text;
-  var endStep = Math.max(1 + minContentWidth, 1 + lineWidth - indent.length);
+  const endStep = Math.max(1 + minContentWidth, 1 + lineWidth - indent.length);
   if (text.length <= endStep) return text;
-  var folds = [];
-  var escapedFolds = {};
-  var end = lineWidth - (typeof indentAtStart === 'number' ? indentAtStart : indent.length);
-  var split = undefined;
-  var prev = undefined;
-  var overflow = false;
+  const folds = [];
+  const escapedFolds = {};
+  let end = lineWidth - (typeof indentAtStart === 'number' ? indentAtStart : indent.length);
+  let split = undefined;
+  let prev = undefined;
+  let overflow = false;
 
-  for (var i = 0, ch = text[0]; ch; ch = text[i += 1]) {
+  for (let i = 0, ch = text[0]; ch; ch = text[i += 1]) {
     if (mode === FOLD_QUOTED && ch === '\\') {
       switch (text[i + 1]) {
         case 'x':
@@ -63,7 +62,7 @@ export default function foldFlowLines(text, indent, mode, _ref) {
     if (ch === '\n') {
       if (mode === FOLD_BLOCK) {
         // more-indented lines in blocks can't be folded
-        var next = text[i + 1];
+        let next = text[i + 1];
 
         while (next === ' ' || next === '\t') {
           do {
@@ -79,8 +78,8 @@ export default function foldFlowLines(text, indent, mode, _ref) {
     } else {
       if (ch === ' ' && prev && prev !== ' ' && prev !== '\n' && prev !== '\t') {
         // space surrounded by non-space can be replaced with newline + indent
-        var _next = text[i + 1];
-        if (_next && _next !== ' ' && _next !== '\n' && _next !== '\t') split = i;
+        const next = text[i + 1];
+        if (next && next !== ' ' && next !== '\n' && next !== '\t') split = i;
       }
 
       if (i >= end) {
@@ -113,15 +112,13 @@ export default function foldFlowLines(text, indent, mode, _ref) {
   if (overflow && onOverflow) onOverflow();
   if (folds.length === 0) return text;
   if (onFold) onFold();
-  var res = text.slice(0, folds[0]);
+  let res = text.slice(0, folds[0]);
 
-  for (var _i = 0; _i < folds.length; ++_i) {
-    var fold = folds[_i];
-
-    var _end = folds[_i + 1] || text.length;
-
-    if (mode === FOLD_QUOTED && escapedFolds[fold]) res += "".concat(text[fold], "\\");
-    res += "\n".concat(indent).concat(text.slice(fold + 1, _end));
+  for (let i = 0; i < folds.length; ++i) {
+    const fold = folds[i];
+    const end = folds[i + 1] || text.length;
+    if (mode === FOLD_QUOTED && escapedFolds[fold]) res += `${text[fold]}\\`;
+    res += `\n${indent}${text.slice(fold + 1, end)}`;
   }
 
   return res;

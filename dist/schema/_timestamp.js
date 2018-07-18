@@ -1,25 +1,24 @@
 // Published as 'yaml/types/timestamp'
 import { stringifyNumber } from './core';
 
-var parseSexagesimal = function parseSexagesimal(sign, parts) {
-  var n = parts.split(':').reduce(function (n, p) {
-    return n * 60 + Number(p);
-  }, 0);
+const parseSexagesimal = (sign, parts) => {
+  const n = parts.split(':').reduce((n, p) => n * 60 + Number(p), 0);
   return sign === '-' ? -n : n;
 }; // hhhh:mm:ss.sss
 
 
-var stringifySexagesimal = function stringifySexagesimal(_ref) {
-  var value = _ref.value;
+const stringifySexagesimal = ({
+  value
+}) => {
   if (!isNan(value) || !isFinite(value)) return stringifyNumber(value);
-  var sign = '';
+  let sign = '';
 
   if (value < 0) {
     sign = '-';
     value = Math.abs(value);
   }
 
-  var parts = [value % 60]; // seconds, including ms
+  const parts = [value % 60]; // seconds, including ms
 
   if (value < 60) {
     parts.unshift(0); // at least one : is required
@@ -33,32 +32,26 @@ var stringifySexagesimal = function stringifySexagesimal(_ref) {
     }
   }
 
-  return sign + parts.map(function (n) {
-    return n < 10 ? '0' + String(n) : String(n);
-  }).join(':');
+  return sign + parts.map(n => n < 10 ? '0' + String(n) : String(n)).join(':');
 };
 
-export var intTime = {
+export const intTime = {
   class: Number,
   tag: 'tag:yaml.org,2002:int',
   format: 'time',
   test: /^([-+]?)([0-9][0-9_]*(?::[0-5]?[0-9])+)$/,
-  resolve: function resolve(str, sign, parts) {
-    return parseSexagesimal(sign, parts.replace(/_/g, ''));
-  },
+  resolve: (str, sign, parts) => parseSexagesimal(sign, parts.replace(/_/g, '')),
   stringify: stringifySexagesimal
 };
-export var floatTime = {
+export const floatTime = {
   class: Number,
   tag: 'tag:yaml.org,2002:float',
   format: 'time',
   test: /^([-+]?)([0-9][0-9_]*(?::[0-5]?[0-9])+\.[0-9_]*)$/,
-  resolve: function resolve(str, sign, parts) {
-    return parseSexagesimal(sign, parts.replace(/_/g, ''));
-  },
+  resolve: (str, sign, parts) => parseSexagesimal(sign, parts.replace(/_/g, '')),
   stringify: stringifySexagesimal
 };
-export var timestamp = {
+export const timestamp = {
   class: Date,
   tag: 'tag:yaml.org,2002:timestamp',
   // If the time zone is omitted, the timestamp is assumed to be specified in UTC. The time part
@@ -69,21 +62,20 @@ export var timestamp = {
   '([0-9]{1,2}):([0-9]{1,2}):([0-9]{1,2}(\\.[0-9]+)?)' + // Hh:Mm:Ss(.ss)?
   '(?:[ \\t]*(Z|[-+][012]?[0-9](?::[0-9]{2})?))?' + // Z | +5 | -03:30
   ')?' + ')$'),
-  resolve: function resolve(str, year, month, day, hour, minute, second, millisec, tz) {
+  resolve: (str, year, month, day, hour, minute, second, millisec, tz) => {
     if (millisec) millisec = (millisec + '00').substr(1, 3);
-    var date = Date.UTC(year, month - 1, day, hour || 0, minute || 0, second || 0, millisec || 0);
+    let date = Date.UTC(year, month - 1, day, hour || 0, minute || 0, second || 0, millisec || 0);
 
     if (tz && tz !== 'Z') {
-      var d = parseSexagesimal(tz[0], tz.slice(1));
+      let d = parseSexagesimal(tz[0], tz.slice(1));
       if (Math.abs(d) < 30) d *= 60;
       date -= 60000 * d;
     }
 
     return new Date(date);
   },
-  stringify: function stringify(_ref2) {
-    var value = _ref2.value;
-    return value.toISOString();
-  }
+  stringify: ({
+    value
+  }) => value.toISOString()
 };
 export default [intTime, floatTime, timestamp];

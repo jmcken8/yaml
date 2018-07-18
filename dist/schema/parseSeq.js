@@ -4,11 +4,11 @@ import Pair from './Pair';
 import { checkKeyLength, resolveComments } from './parseUtils';
 import Seq from './Seq';
 export default function parseSeq(doc, cst) {
-  var _ref = cst.type === Type.FLOW_SEQ ? resolveFlowSeqItems(doc, cst) : resolveBlockSeqItems(doc, cst),
-      comments = _ref.comments,
-      items = _ref.items;
-
-  var seq = new Seq();
+  const {
+    comments,
+    items
+  } = cst.type === Type.FLOW_SEQ ? resolveFlowSeqItems(doc, cst) : resolveBlockSeqItems(doc, cst);
+  const seq = new Seq();
   seq.items = items;
   resolveComments(seq, comments);
   cst.resolved = seq;
@@ -16,11 +16,11 @@ export default function parseSeq(doc, cst) {
 }
 
 function resolveBlockSeqItems(doc, cst) {
-  var comments = [];
-  var items = [];
+  const comments = [];
+  const items = [];
 
-  for (var i = 0; i < cst.items.length; ++i) {
-    var item = cst.items[i];
+  for (let i = 0; i < cst.items.length; ++i) {
+    const item = cst.items[i];
 
     switch (item.type) {
       case Type.COMMENT:
@@ -38,26 +38,26 @@ function resolveBlockSeqItems(doc, cst) {
 
       default:
         if (item.error) doc.errors.push(item.error);
-        doc.errors.push(new YAMLSyntaxError(item, "Unexpected ".concat(item.type, " node in sequence")));
+        doc.errors.push(new YAMLSyntaxError(item, `Unexpected ${item.type} node in sequence`));
     }
   }
 
   return {
-    comments: comments,
-    items: items
+    comments,
+    items
   };
 }
 
 function resolveFlowSeqItems(doc, cst) {
-  var comments = [];
-  var items = [];
-  var explicitKey = false;
-  var key = undefined;
-  var keyStart = null;
-  var next = '[';
+  const comments = [];
+  const items = [];
+  let explicitKey = false;
+  let key = undefined;
+  let keyStart = null;
+  let next = '[';
 
-  for (var i = 0; i < cst.items.length; ++i) {
-    var item = cst.items[i];
+  for (let i = 0; i < cst.items.length; ++i) {
+    const item = cst.items[i];
 
     if (typeof item === 'string') {
       if (item !== ':' && (explicitKey || key !== undefined)) {
@@ -86,7 +86,7 @@ function resolveFlowSeqItems(doc, cst) {
 
         next = null;
       } else if (next === '[' || item !== ']' || i < cst.items.length - 1) {
-        doc.errors.push(new YAMLSyntaxError(cst, "Flow sequence contains an unexpected ".concat(item)));
+        doc.errors.push(new YAMLSyntaxError(cst, `Flow sequence contains an unexpected ${item}`));
       }
     } else if (item.type === Type.COMMENT) {
       comments.push({
@@ -94,8 +94,8 @@ function resolveFlowSeqItems(doc, cst) {
         before: items.length
       });
     } else {
-      if (next) doc.errors.push(new YAMLSemanticError(item, "Expected a ".concat(next, " here in flow sequence")));
-      var value = doc.resolveNode(item);
+      if (next) doc.errors.push(new YAMLSemanticError(item, `Expected a ${next} here in flow sequence`));
+      const value = doc.resolveNode(item);
 
       if (key === undefined) {
         items.push(value);
@@ -112,7 +112,7 @@ function resolveFlowSeqItems(doc, cst) {
   if (cst.items[cst.items.length - 1] !== ']') doc.errors.push(new YAMLSemanticError(cst, 'Expected flow sequence to end with ]'));
   if (key !== undefined) items.push(new Pair(key));
   return {
-    comments: comments,
-    items: items
+    comments,
+    items
   };
 }

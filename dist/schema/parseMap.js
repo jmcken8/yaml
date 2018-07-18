@@ -6,35 +6,41 @@ import Pair from './Pair';
 import { checkKeyLength, resolveComments } from './parseUtils';
 import Alias from './Alias';
 export default function parseMap(doc, cst) {
-  var _ref = cst.type === Type.FLOW_MAP ? resolveFlowMapItems(doc, cst) : resolveBlockMapItems(doc, cst),
-      comments = _ref.comments,
-      items = _ref.items;
-
-  var map = new Map();
+  const {
+    comments,
+    items
+  } = cst.type === Type.FLOW_MAP ? resolveFlowMapItems(doc, cst) : resolveBlockMapItems(doc, cst);
+  const map = new Map();
   map.items = items;
   resolveComments(map, comments);
 
-  for (var i = 0; i < items.length; ++i) {
-    var iKey = items[i].key;
+  for (let i = 0; i < items.length; ++i) {
+    const {
+      key: iKey
+    } = items[i];
 
-    for (var j = i + 1; j < items.length; ++j) {
-      var jKey = items[j].key;
+    for (let j = i + 1; j < items.length; ++j) {
+      const {
+        key: jKey
+      } = items[j];
 
       if (iKey === jKey || iKey && jKey && iKey.hasOwnProperty('value') && iKey.value === jKey.value) {
-        doc.errors.push(new YAMLSemanticError(cst, "Map keys must be unique; \"".concat(iKey, "\" is repeated")));
+        doc.errors.push(new YAMLSemanticError(cst, `Map keys must be unique; "${iKey}" is repeated`));
         break;
       }
     }
 
     if (doc.schema.merge && iKey.value === MERGE_KEY) {
       items[i] = new Merge(items[i]);
-      var sources = items[i].value.items;
-      var error = null;
-      sources.some(function (node) {
+      const sources = items[i].value.items;
+      let error = null;
+      sources.some(node => {
         if (node instanceof Alias) {
           // During parsing, alias sources are CST nodes; to account for
           // circular references their resolved values can't be used here.
-          var type = node.source.type;
+          const {
+            type
+          } = node.source;
           if (type === Type.MAP || type === Type.FLOW_MAP) return false;
           return error = 'Merge nodes aliases can only point to maps';
         }
@@ -50,13 +56,13 @@ export default function parseMap(doc, cst) {
 }
 
 function resolveBlockMapItems(doc, cst) {
-  var comments = [];
-  var items = [];
-  var key = undefined;
-  var keyStart = null;
+  const comments = [];
+  const items = [];
+  let key = undefined;
+  let keyStart = null;
 
-  for (var i = 0; i < cst.items.length; ++i) {
-    var item = cst.items[i];
+  for (let i = 0; i < cst.items.length; ++i) {
+    const item = cst.items[i];
 
     switch (item.type) {
       case Type.COMMENT:
@@ -92,7 +98,7 @@ function resolveBlockMapItems(doc, cst) {
         key = doc.resolveNode(item);
         keyStart = item.range.start;
         if (item.error) doc.errors.push(item.error);
-        var nextItem = cst.items[i + 1];
+        const nextItem = cst.items[i + 1];
         if (!nextItem || nextItem.type !== Type.MAP_VALUE) doc.errors.push(new YAMLSemanticError(item, 'Implicit map keys need to be followed by map values'));
         if (item.valueRangeContainsNewline) doc.errors.push(new YAMLSemanticError(item, 'Implicit map keys need to be on a single line'));
     }
@@ -100,22 +106,22 @@ function resolveBlockMapItems(doc, cst) {
 
   if (key !== undefined) items.push(new Pair(key));
   return {
-    comments: comments,
-    items: items
+    comments,
+    items
   };
 }
 
 function resolveFlowMapItems(doc, cst) {
-  var comments = [];
-  var items = [];
-  var key = undefined;
-  var keyStart = null;
-  var explicitKey = false;
-  var next = '{';
+  const comments = [];
+  const items = [];
+  let key = undefined;
+  let keyStart = null;
+  let explicitKey = false;
+  let next = '{';
 
-  for (var i = 0; i < cst.items.length; ++i) {
+  for (let i = 0; i < cst.items.length; ++i) {
     checkKeyLength(doc.errors, cst, i, key, keyStart);
-    var item = cst.items[i];
+    const item = cst.items[i];
 
     if (typeof item === 'string') {
       if (item === '?' && key === undefined && !explicitKey) {
@@ -156,7 +162,7 @@ function resolveFlowMapItems(doc, cst) {
         continue;
       }
 
-      doc.errors.push(new YAMLSyntaxError(cst, "Flow map contains an unexpected ".concat(item)));
+      doc.errors.push(new YAMLSyntaxError(cst, `Flow map contains an unexpected ${item}`));
     } else if (item.type === Type.COMMENT) {
       comments.push({
         comment: item.comment,
@@ -177,7 +183,7 @@ function resolveFlowMapItems(doc, cst) {
   if (cst.items[cst.items.length - 1] !== '}') doc.errors.push(new YAMLSemanticError(cst, 'Expected flow map to end with }'));
   if (key !== undefined) items.push(new Pair(key));
   return {
-    comments: comments,
-    items: items
+    comments,
+    items
   };
 }
