@@ -3,7 +3,7 @@
 import Document from './Document'
 import ParseContext from './ParseContext'
 
-export default function parse(src, options) {
+export default async function parse(src, options) {
   if (src.indexOf('\r') !== -1) src = src.replace(/\r\n?/g, '\n')
   const context = new ParseContext({ src })
   const documents = []
@@ -11,7 +11,12 @@ export default function parse(src, options) {
   let offset = 0
   while (offset < src.length) {
     const doc = new Document()
-    offset = doc.parse(context, offset)
+    const calc_offset = new Promise(resolve => {
+        setTimeout(() => {
+            resolve(doc.parse(context, offset));
+        });
+    });
+    offset = await calc_offset;
     documents.push(doc)
     if(sendStatus) sendStatus(false, offset, src.length)
   }

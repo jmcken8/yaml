@@ -16,17 +16,23 @@ class Document extends YAMLDocument {
   }
 }
 
-function parseAllDocuments(src, options) {
+async function parseAllDocuments(src, options) {
   let index = 0;
   const sendStatus = options && options.sendParseStatus;
-  const cst_list = parseCST(src, options);
-  const doc_list = cst_list.map(cstDoc => {
-    if(sendStatus) sendStatus(false, index, cst_list.length)
+  const cst_list = await parseCST(src, options);
+  const doc_list = cst_list.map((cstDoc) => {
+    const curr_index = index;
     index++;
-    return new Document(options).parse(cstDoc);
+    return new Promise(resolve => {
+        setTimeout(() => {
+            if(sendStatus) sendStatus(false, curr_index, cst_list.length)
+            resolve(new Document(options).parse(cstDoc));
+        });
+    });
   })
+  const docs = await Promise.all(doc_list);
   if(sendStatus) sendStatus(true, cst_list.length, cst_list.length);
-  return doc_list;
+  return docs;
 }
 
 function parseDocument(src, options) {
