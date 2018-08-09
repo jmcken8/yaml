@@ -17,7 +17,16 @@ class Document extends YAMLDocument {
 }
 
 function parseAllDocuments(src, options) {
-  return parseCST(src).map(cstDoc => new Document(options).parse(cstDoc))
+  let index = 0;
+  const sendStatus = options && options.sendParseStatus;
+  const cst_list = parseCST(src, options);
+  const doc_list = cst_list.map(cstDoc => {
+    if(sendStatus) sendStatus(false, index, cst_list.length)
+    index++;
+    return new Document(options).parse(cstDoc);
+  })
+  if(sendStatus) sendStatus(true, cst_list.length, cst_list.length);
+  return doc_list;
 }
 
 function parseDocument(src, options) {
